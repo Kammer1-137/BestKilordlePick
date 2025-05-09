@@ -1,10 +1,22 @@
 import loading
 import wordOperations
 
+import time
+
 if __name__ == '__main__':
     words = loading.loadWords()
 
-    weights = wordOperations.createWeightmap(words)
+    # start = time.time()
+    # weights = wordOperations.createWeightmap(words)
+    # end = time.time()
+    # print(f'Stara wersja: {end - start}')
+    #
+    # start = time.time()
+    # weights = wordOperations.createWeightmapOptimized(words)
+    # end = time.time()
+    # print(f'Npwa wersja: {end - start}')
+
+    weights = wordOperations.createWeightmapOptimized(words)
     weightedWords = wordOperations.assignValues(words, weights)
 
     wordCount = 0

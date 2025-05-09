@@ -1,15 +1,15 @@
 import pandas as pd
 import numpy as np
+from collections import Counter
 
 
-def createWeightmap(words: list[str]) -> pd.DataFrame:
+def createEmptyDF() -> pd.DataFrame:
     column_labels = [0, 1, 2, 3, 4]
     row_labels = [
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
         "k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
         "u", "v", "w", "x", "y", "z"
     ]
-
     df = pd.DataFrame(
         np.zeros(
             (
@@ -19,6 +19,11 @@ def createWeightmap(words: list[str]) -> pd.DataFrame:
         ), index=row_labels, columns=column_labels
     )
     df = df.astype(int)
+    return df
+
+
+def createWeightmap(words: list[str]) -> pd.DataFrame:
+    df = createEmptyDF()
 
     # word = words[0]
 
@@ -29,7 +34,25 @@ def createWeightmap(words: list[str]) -> pd.DataFrame:
             df.loc[letter, i] += 1
             # print(f"{i}. letter is {letter}")
 
-    print(df)
+    # print(df)
+
+    return df
+
+
+def createWeightmapOptimized(words: list[str]) -> pd.DataFrame:
+    df = createEmptyDF()
+
+    transposed = ["".join(row) for row in zip(*words)]
+    # print(len(transposed))
+
+    for column, letters in enumerate(transposed):
+        c = Counter(letters)
+        # print(c)
+
+        for letter, number in c.items():
+            df.loc[letter, column] = number
+
+    # print(df)
 
     return df
 
