@@ -3,6 +3,8 @@ import wordOperations
 
 import time
 
+wordOperations.defineMode('+')
+
 if __name__ == '__main__':
     words = loading.loadWords()
 
@@ -16,21 +18,6 @@ if __name__ == '__main__':
     # end = time.time()
     # print(f'Npwa wersja: {end - start}')
 
-    weights = wordOperations.createWeightmapOptimized(words)
-    weightedWords = wordOperations.assignValues(words, weights)
-
-    wordCount = 0
-
-    for _ in words:
-        wordCount += 1
-        top = weightedWords.popitem()
-        topWord, topValue = top[0], top[1]
-        print(f'{topWord}\t{topValue}')
-
-        if topValue == 0:
-            break
-
-        weights = wordOperations.alignWeights(topWord, weights)
-        weightedWords = wordOperations.assignValues(words, weights)
+    wordCount = wordOperations.findBestWords(words)
 
     print(f'{wordCount=}')
