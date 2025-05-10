@@ -59,7 +59,7 @@ def createWeightmapOptimized(words: list[str]) -> pd.DataFrame:
     return df
 
 
-def assignValues(words: list[str], weights: pd.DataFrame) -> dict[str, int]:
+def assignValues(words: list[str], weights: pd.DataFrame, reverse: bool = False) -> dict[str, int]:
     valueDict = {}
 
     for word in words:
@@ -70,7 +70,7 @@ def assignValues(words: list[str], weights: pd.DataFrame) -> dict[str, int]:
 
         valueDict.update({word: int(value)})
 
-    valueDict = dict(sorted(valueDict.items(), key=lambda item: item[1]))
+    valueDict = dict(sorted(valueDict.items(), key=lambda item: item[1], reverse=reverse))
     # valueDict = {key: value for key, value in valueDict.items() if value != 0}
     # print(valueDict)
 

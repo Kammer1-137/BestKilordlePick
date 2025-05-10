@@ -1,5 +1,6 @@
 import loading
 import wordOperations
+import doubleCoverage
 
 import time
 
@@ -18,6 +19,9 @@ if __name__ == '__main__':
     # end = time.time()
     # print(f'Npwa wersja: {end - start}')
 
-    wordCount = wordOperations.findBestWords(words)
+    weights = wordOperations.createWeightmapOptimized(words)
+    doubleCoverage.doubleCoverage(words, weights)
 
-    print(f'{wordCount=}')
+    # wordCount = wordOperations.findBestWords(words)
+    #
+    # print(f'{wordCount=}')
