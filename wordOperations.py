@@ -33,7 +33,7 @@ def createWeightmap(words: list[str]) -> pd.DataFrame:
 
         # print(word)
         for i, letter in enumerate(word):
-            df.loc[letter, i] += 1
+            df.at[letter, i] += 1
             # print(f"{i}. letter is {letter}")
 
     # print(df)
@@ -52,7 +52,7 @@ def createWeightmapOptimized(words: list[str]) -> pd.DataFrame:
         # print(c)
 
         for letter, number in c.items():
-            df.loc[letter, column] = number
+            df.at[letter, column] = number
 
     # print(df)
 
@@ -65,7 +65,7 @@ def assignValues(words: list[str], weights: pd.DataFrame, reverse: bool = False)
     for word in words:
         value = algoDict['border']
         for i, letter in enumerate(word):
-            value = algoDict['calculate'](value, weights.loc[letter, i])
+            value = algoDict['calculate'](value, weights.at[letter, i])
             # value += weights.loc[letter, i]
 
         valueDict.update({word: int(value)})
@@ -79,7 +79,7 @@ def assignValues(words: list[str], weights: pd.DataFrame, reverse: bool = False)
 
 def alignWeights(word: str, weights: pd.DataFrame) -> pd.DataFrame:
     for i, letter in enumerate(word):
-        weights.loc[letter, i] = algoDict['border']
+        weights.at[letter, i] = algoDict['border']
 
     return weights
 

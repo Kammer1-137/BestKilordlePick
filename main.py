@@ -20,7 +20,11 @@ if __name__ == '__main__':
     # print(f'Npwa wersja: {end - start}')
 
     weights = wordOperations.createWeightmapOptimized(words)
+
+    start = time.time()
     doubleCoverage.doubleCoverage(words, weights)
+    end = time.time()
+    print(f'Stara wersja: {end - start}')
 
     # wordCount = wordOperations.findBestWords(words)
     #

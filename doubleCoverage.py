@@ -36,8 +36,8 @@ def doubleCoverage(words: list[str], reservoirDF: pd.DataFrame):
     words.remove(topWord)
 
     for pos, letter in enumerate(topWord):
-        usedLettersDF.loc[letter, pos] += 1
-        reservoirDF.loc[letter, pos] -= 1
+        usedLettersDF.at[letter, pos] += 1
+        reservoirDF.at[letter, pos] -= 1
 
     print(usedLettersDF.values)
 
@@ -68,8 +68,8 @@ def doubleCoverage(words: list[str], reservoirDF: pd.DataFrame):
         words.remove(topWord)
 
         for pos, letter in enumerate(topWord):
-            usedLettersDF.loc[letter, pos] += 1
-            reservoirDF.loc[letter, pos] -= 1
+            usedLettersDF.at[letter, pos] += 1
+            reservoirDF.at[letter, pos] -= 1
             # reservoirDF.loc[letter, pos] *= 2
 
         # print(usedLettersDF)
