@@ -71,6 +71,7 @@ def assignValues(words: list[str], weights: pd.DataFrame) -> dict[str, int]:
         valueDict.update({word: int(value)})
 
     valueDict = dict(sorted(valueDict.items(), key=lambda item: item[1]))
+    # valueDict = {key: value for key, value in valueDict.items() if value != 0}
     # print(valueDict)
 
     return valueDict
@@ -116,10 +117,27 @@ def findBestWords(words: list[str], algoSymbol: str = '+') -> int:
         wordCount += 1
         top = weightedWords.popitem()
         topWord, topValue = top[0], top[1]
+
+        # fraction = .8 # Position to remove (e.g., 1/4 for the element at 25%)
+        # index_to_remove = round(len(weightedWords) * fraction)
+        #
+        # keys = list(weightedWords.keys())  # Get ordered list of keys
+        # key_to_remove = keys[index_to_remove]  # Get the specific key
+        #
+        # removed_value = weightedWords.pop(key_to_remove)
+        #
+        # topWord, topValue = key_to_remove, removed_value
+
         print(f'{topWord}\t{topValue}')
 
         if topValue == algoDict['border']:
             condit = False
+
+        # dfMean = weights.mean().mean()
+        # print(f'{dfMean=}')
+        #
+        # if dfMean == algoDict['border']:
+        #     condit = False
 
         weights = alignWeights(topWord, weights)
         weightedWords = assignValues(words, weights)
