@@ -41,8 +41,6 @@ def doubleCoverage(words: list[str], reservoirDF: pd.DataFrame):
 
     print(usedLettersDF.values)
 
-    print(usedLettersDF.eq(0).any().any())
-
     print(reservoirDF)
 
     # for _ in range(10):
@@ -79,3 +77,95 @@ def doubleCoverage(words: list[str], reservoirDF: pd.DataFrame):
     print(usedWords)
 
     print(len(usedWords))
+
+
+###########################
+
+def doubleCoverageWithBranching(
+        words: list[str],
+        reservoirDF: pd.DataFrame,
+        width: int = 4,
+        depth: int = 3
+):
+    usedLettersDF = wordOperations.createEmptyDF()
+    weightedWords = wordOperations.assignValues(words, reservoirDF, True)
+
+    usedWords = []
+
+    top = weightedWords.popitem()
+    topWord, topValue = top[0], top[1]
+    usedWords.append(topWord)
+    print(top)
+    words.remove(topWord)
+
+    for pos, letter in enumerate(topWord):
+        usedLettersDF.at[letter, pos] += 1
+        reservoirDF.at[letter, pos] -= 1
+
+    print(usedLettersDF.values)
+
+    print(reservoirDF)
+
+    # for _ in range(10):
+    while 0 in usedLettersDF.values:
+        currentDepth = 0
+        branchDict = {}
+        while currentDepth < depth:
+
+            words = leaveOnlyZeroLetteredWords(words, usedLettersDF)
+
+            weightedWords, min_value, min_keys = sortWorda(reservoirDF, usedLettersDF, words)
+
+            # print(weightedWords.keys())
+            lastElements = dict(list(weightedWords.items())[-width:])
+            print(lastElements)
+
+            for word, value in enumerate(lastElements.items()):
+                print(word, value)
+                weightedWords.pop(
+                    word
+                )
+
+            top = weightedWords.popitem()
+            topWord, topValue = top[0], top[1]
+            usedWords.append(topWord)
+            print(top, min_value, len(min_keys))
+            words.remove(topWord)
+
+            for pos, letter in enumerate(topWord):
+                usedLettersDF.at[letter, pos] += 1
+                reservoirDF.at[letter, pos] -= 1
+
+            # print(usedLettersDF)
+            # print(f'{len(usedWords)=}')
+
+            currentDepth += 1
+
+    print(usedWords)
+
+    print(len(usedWords))
+
+
+def sortWorda(reservoirDF: pd.DataFrame, usedLettersDF: pd.DataFrame, words: list[str]) -> (
+        tuple)[dict[str, int], int, list[str]]:
+    weightedWords = wordOperations.assignValues(words, usedLettersDF, True)
+    min_value = min(weightedWords.values())
+    min_keys = [k for k in weightedWords if weightedWords[k] == min_value]
+    weightedWords = wordOperations.assignValues(min_keys, reservoirDF, True)
+    return weightedWords, min_value, min_keys
+
+
+
+
+import multiprocessing
+
+# def compute(x):
+#     """Example function that performs computation."""
+#     return x * x
+#
+# if __name__ == "__main__":
+#     arguments = [1, 2, 3, 4, 5]  # Different arguments to process
+#     with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+#         results = pool.map(compute, arguments)  # Run function on different cores
+#
+#     print("Results:", results)

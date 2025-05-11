@@ -21,10 +21,8 @@ if __name__ == '__main__':
 
     weights = wordOperations.createWeightmapOptimized(words)
 
-    start = time.time()
-    doubleCoverage.doubleCoverage(words, weights)
-    end = time.time()
-    print(f'Stara wersja: {end - start}')
+    # doubleCoverage.doubleCoverage(words, weights)
+    doubleCoverage.doubleCoverageWithBranching(words, weights)
 
     # wordCount = wordOperations.findBestWords(words)
     #
