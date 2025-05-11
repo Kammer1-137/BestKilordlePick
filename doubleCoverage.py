@@ -170,7 +170,7 @@ import multiprocessing
 #     # For example, return sortedWeightedWords, min_value, min_keys
 #     return sorted_weighted_dict, min_value, min_keys
 
-def candidate_branch(candidate,
+def candidate_branch(candidate: str,
                      value: int,
                      words: list,
                      reservoirDF: pd.DataFrame,
@@ -178,153 +178,136 @@ def candidate_branch(candidate,
                      width: int,
                      depth: int) -> list:
     """
-    Recursively computes all candidate branches starting from the given candidate.
+    Recursively generates all candidate branches starting from the given candidate.
 
     Parameters:
-      candidate: the starting word or branch (list of words).
-                 If a list is provided, the last element is the word used for state updates.
-      value: the weight associated with the candidate.
-      words: current available words list.
+      candidate: Starting word (a string).
+      value: Weight associated with this candidate.
+      words: Current available words list.
       reservoirDF: DataFrame representing the current reservoir state.
-      usedLettersDF: DataFrame representing used letters.
-      width: number of candidate choices to consider at each step.
-      depth: remaining branch depth (if depth==1, the branch is complete).
+      usedLettersDF: DataFrame representing the used letters.
+      width: Number of candidate options to consider at each branch node.
+      depth: Remaining branch depth (when depth == 1 the branch is complete).
 
     Returns:
-      A list of tuples. Each tuple is (branch, cumulative_weight) where branch is a list
-      of words representing one complete branch.
+      A list of tuples: (branch, cumulative_weight), where branch is a list of words.
     """
-    # If candidate is already a branch (a list), extract its last element as the current candidate word.
-    if isinstance(candidate, list):
-        candidate_word = candidate[-1]
-        branch = candidate[:]  # copy the branch
-    else:
-        candidate_word = candidate
-        branch = [candidate_word]
-
-    # Initialize the cumulative weight.
+    # Initialize the branch with the candidate.
+    branch = [candidate]
     cumulative_weight = value
 
-    # Work on copies of state so that each branch is independent.
-    local_words = words.copy()
-    if candidate_word in local_words:
-        local_words.remove(candidate_word)
-    local_usedLettersDF = usedLettersDF.copy()
-    local_reservoirDF = reservoirDF.copy()
+    # Use deep copies to ensure each branch works with independent state.
+    local_words = copy.deepcopy(words)
+    if candidate in local_words:
+        local_words.remove(candidate)
+    local_usedLettersDF = copy.deepcopy(usedLettersDF)
+    local_reservoirDF = copy.deepcopy(reservoirDF)
 
-    # Update the DataFrames for the current candidate word.
-    # Here we assume that candidate_word is a string, so that iterating over it gives characters.
-    for pos, letter in enumerate(candidate_word):
+    # Update the state based on the characters in the candidate word.
+    for pos, letter in enumerate(candidate):
         local_usedLettersDF.at[letter, pos] += 1
         local_reservoirDF.at[letter, pos] -= 1
 
-    # Base case: if depth == 1, no further branching.
+    # Immediately check: if every position in usedLettersDF is now covered (i.e. no zeros), then terminate.
+    if 0 not in local_usedLettersDF.values:
+        return [(branch, cumulative_weight)]
+
+    # Base case: if no further depth is allowed, return the current branch.
     if depth == 1:
         return [(branch, cumulative_weight)]
 
-    # Update available words, then recalc weighted words.
+    # Filter the available words based on the updated usedLettersDF.
     local_words = leaveOnlyZeroLetteredWords(local_words, local_usedLettersDF)
     weightedWords, min_value, min_keys = sortWorda(local_reservoirDF, local_usedLettersDF, local_words)
     if not weightedWords:
         return [(branch, cumulative_weight)]
 
-    all_branches = []
-    # Get candidate options from the last `width` items.
+    # From the current weightedWords, take the last `width` candidates to extend the branch.
     candidate_options = dict(list(weightedWords.items())[-width:])
-
-    # Process each candidate option recursively.
+    all_branches = []
     for cand, cand_value in candidate_options.items():
-        extensions = candidate_branch(cand, cand_value,
-                                      local_words, local_reservoirDF, local_usedLettersDF,
-                                      width, depth - 1)
+        # Recursively compute extensions for each candidate.
+        extensions = candidate_branch(
+            cand,
+            cand_value,
+            copy.deepcopy(local_words),
+            copy.deepcopy(local_reservoirDF),
+            copy.deepcopy(local_usedLettersDF),
+            width,
+            depth - 1
+        )
         for ext_branch, ext_weight in extensions:
             all_branches.append((branch + ext_branch, cumulative_weight + ext_weight))
-
     return all_branches
 
 
 def doubleCoverageWithBranching2(words: list[str],
-                                 reservoirDF: pd.DataFrame,
-                                 width: int = 12,
-                                 depth: int = 3):
+                                reservoirDF: pd.DataFrame,
+                                width: int = 4,
+                                depth: int = 3):
     """
-    This function first initializes the state by picking a top word (from the weighted dictionary),
-    updating the used letters and the reservoir. Then, while there remain zeros in usedLettersDF,
-    it computes candidate branches in parallel using multiprocessing. The branching is done over the
-    last `width` of the weighted dictionary, recursing for `depth` steps.
+    Instead of pre-selecting the first word, this function starts branching
+    right away from the available candidates. In each iteration, it filters, weights,
+    and then uses the last 'width' candidates to spawn candidate branches concurrently.
+    The branch with the lowest cumulative weight is chosen to update the global state.
 
-    Note: The helper functions `leaveOnlyZeroLetteredWords` and `sortWorda` (as well as
-    the wordOperations functions) are assumed to be defined.
+    The process continues until there are no zeros left in usedLettersDF.
     """
     usedLettersDF = wordOperations.createEmptyDF()
-    weightedWords = wordOperations.assignValues(words, reservoirDF, True)
     usedWords = []
+    weightedWords = wordOperations.assignValues(words, reservoirDF, True)
 
-    # Initial selection: take the top value from weightedWords
-    top = weightedWords.popitem()
-    topWord, topValue = top[0], top[1]
-    usedWords.append(topWord)
-    if topWord in words:
-        words.remove(topWord)
-
-    for pos, letter in enumerate(topWord):
-        usedLettersDF.at[letter, pos] += 1
-        reservoirDF.at[letter, pos] -= 1
-
-    # print("Initial usedLettersDF:\n", usedLettersDF.values)
-    # print("Initial reservoirDF:\n", reservoirDF)
-
-    # Main loop: continue until there are no zeros left in usedLettersDF.
     while 0 in usedLettersDF.values:
-        # Update the words list by keeping only those words that have zeros in the usedLettersDF.
+        # Update available words based on the current usedLettersDF.
         words = leaveOnlyZeroLetteredWords(words, usedLettersDF)
         weightedWords, min_value, min_keys = sortWorda(reservoirDF, usedLettersDF, words)
         if not weightedWords:
             break
 
-        # Take the last `width` elements from weightedWords as candidates.
+        # Instead of a fixed first word, consider the last 'width' candidates.
         candidates = dict(list(weightedWords.items())[-width:])
         print("Candidates at current iteration:", candidates)
 
-        # Set up arguments for each candidate branch.
+        # Set up arguments for each candidate branch using deepcopy.
         params = []
         for candidate, value in candidates.items():
-            # Pass copies of the state to each candidate branch so that changes in one branch don’t affect another.
-            params.append(
-                (
-                    candidate,
-                    value,
-                    copy.deepcopy(words),
-                    copy.deepcopy(reservoirDF),
-                    copy.deepcopy(usedLettersDF),
-                    width,
-                    depth)
-            )
+            params.append((
+                candidate,
+                value,
+                copy.deepcopy(words),
+                copy.deepcopy(reservoirDF),
+                copy.deepcopy(usedLettersDF),
+                width,
+                depth
+            ))
 
-        # Use the multiprocessing Pool to compute candidate branches concurrently.
+        # Use a multiprocessing Pool to concurrently compute candidate branches.
         with multiprocessing.Pool() as pool:
             candidate_branches_list = pool.starmap(candidate_branch, params)
 
-        # candidate_branches_list is a list of lists (each from one candidate call).
-        # Flatten them into one list of branch tuples.
+        # Flatten the list of candidate branches.
         all_candidate_branches = []
-        for cand_branches in candidate_branches_list:
-            all_candidate_branches.extend(cand_branches)
+        for branch_list in candidate_branches_list:
+            all_candidate_branches.extend(branch_list)
+
+        if not all_candidate_branches:
+            break
 
         # Choose the branch with the lowest cumulative weight.
-        if all_candidate_branches:
-            chosen_branch, branch_weight = min(all_candidate_branches, key=lambda x: x[1])
-            print("Chosen branch:", chosen_branch)
+        chosen_branch, branch_weight = min(all_candidate_branches, key=lambda x: x[1])
+        print("Chosen branch:", chosen_branch, branch_weight)
 
-            # Update the global state using the chosen branch.
-            for candidate_word in chosen_branch:
-                usedWords.append(candidate_word)
-                if candidate_word in words:
-                    words.remove(candidate_word)
-                # Update the DataFrames based on the candidate word.
-                for pos, letter in enumerate(candidate_word):
-                    usedLettersDF.at[letter, pos] += 1
-                    reservoirDF.at[letter, pos] -= 1
+        # Update the global state with each word from the chosen branch.
+        for candidate_word in chosen_branch:
+            usedWords.append(candidate_word)
+            if candidate_word in words:
+                words.remove(candidate_word)
+            for pos, letter in enumerate(candidate_word):
+                usedLettersDF.at[letter, pos] += 1
+                reservoirDF.at[letter, pos] -= 1
+
+        # print(usedWords)
+
 
         # print("Updated usedLettersDF:\n", usedLettersDF)
         # print("Updated reservoirDF:\n", reservoirDF)
