@@ -22,7 +22,7 @@ if __name__ == '__main__':
     weights = wordOperations.createWeightmapOptimized(words)
 
     # doubleCoverage.doubleCoverage(words, weights)
-    doubleCoverage.doubleCoverageWithBranching(words, weights)
+    doubleCoverage.doubleCoverageWithBranching2(words, weights)
 
     # wordCount = wordOperations.findBestWords(words)
     #
